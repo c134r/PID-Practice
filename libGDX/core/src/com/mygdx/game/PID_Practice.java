@@ -2,32 +2,103 @@ package com.mygdx.game;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.Input;
+import com.badlogic.gdx.graphics.*;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Vector3;
 
 public class PID_Practice extends ApplicationAdapter {
-	SpriteBatch batch;
-	Texture img;
-	
-	@Override
-	public void create () {
-		batch = new SpriteBatch();
-		img = new Texture("badlogic.jpg");
-	}
+    SpriteBatch batch;
+    Texture line;
+    Texture ball;
+    OrthographicCamera camera;
 
-	@Override
-	public void render () {
-		Gdx.gl.glClearColor(1, 0, 0, 1);
-		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-		batch.begin();
-		batch.draw(img, 0, 0);
-		batch.end();
-	}
-	
-	@Override
-	public void dispose () {
-		batch.dispose();
-		img.dispose();
-	}
+    float setPoint;
+    float pointPos;
+    float pointVel;
+    float pointAcc;
+
+    float error;
+    float lastError;
+    float errorIntegral;
+    float errorDerivative;
+
+    @Override
+    public void create() {
+        batch = new SpriteBatch();
+        camera = new OrthographicCamera();
+        camera.setToOrtho(false, 1080, 720);
+        setPoint = Gdx.graphics.getWidth() / 2;
+        pointPos = setPoint;
+        pointVel = 0;
+        pointAcc = 0;
+
+        Pixmap linePixmap = new Pixmap(1, Gdx.graphics.getHeight(), Pixmap.Format.RGBA8888);
+        linePixmap.setColor(Color.BLUE);
+        linePixmap.fill();
+        line = new Texture(linePixmap);
+
+        Pixmap ballPixmap = new Pixmap(64 + 1, 64 + 1, Pixmap.Format.RGBA8888);
+        ballPixmap.setColor(Color.BLACK);
+        ballPixmap.fillCircle(32, 32, 32);
+        ballPixmap.setColor(Color.WHITE);
+        ballPixmap.drawPixel(32, 32);
+        ball = new Texture(ballPixmap);
+    }
+
+    @Override
+    public void render() {
+        Gdx.gl.glClearColor(1, 1, 1, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+        batch.setProjectionMatrix(camera.combined);
+        pollInput();
+        PID();
+        integrate();
+        batch.begin();
+        batch.draw(line, setPoint, 0);
+        batch.draw(ball, pointPos - 32, Gdx.graphics.getHeight() / 2);
+        batch.end();
+    }
+
+    public void pollInput() {
+        if (Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
+            Vector3 mousePos = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
+            camera.unproject(mousePos);
+            pointPos = mousePos.x;
+            pointVel = 0;
+            pointAcc = 0;
+        }
+        else if (Gdx.input.isButtonPressed(Input.Buttons.RIGHT)) {
+            Vector3 mousePos = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
+            camera.unproject(mousePos);
+            setPoint = mousePos.x;
+        }
+    }
+
+    public void PID() {
+        lastError = error;
+        error = setPoint - pointPos;
+        errorIntegral += error * Gdx.graphics.getDeltaTime();
+        errorDerivative = (error - lastError) / Gdx.graphics.getDeltaTime();
+        float force = 0;
+        force += error * 1f;
+        force += errorIntegral * 0.01f;
+        force += errorDerivative * 10f;
+        pointAcc += force;
+    }
+
+    public void integrate() {
+        pointVel += pointAcc * Gdx.graphics.getDeltaTime();
+        pointPos += pointVel * Gdx.graphics.getDeltaTime();
+        pointAcc = 0;
+    }
+
+    @Override
+    public void dispose() {
+        batch.dispose();
+        line.dispose();
+        ball.dispose();
+    }
 }
