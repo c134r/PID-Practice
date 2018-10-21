@@ -8,7 +8,6 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
-import org.graalvm.compiler.loop.MathUtil;
 
 public class PID_Practice extends ApplicationAdapter {
     SpriteBatch batch;
@@ -26,9 +25,9 @@ public class PID_Practice extends ApplicationAdapter {
     float errorIntegral;
     float errorDerivative;
 
-    float gain;
-    float gainIntegral;
-    float gainDerivative;
+    float kP;
+    float kI;
+    float kD;
 
     @Override
     public void create() {
@@ -45,9 +44,9 @@ public class PID_Practice extends ApplicationAdapter {
         errorIntegral = 0;
         errorDerivative = 0;
 
-        gain = 25f;
-        gainIntegral = 10f;
-        gainDerivative = 10f;
+        kP = 10f;
+        kI = 10f;
+        kD = 10f;
 
         Pixmap linePixmap = new Pixmap(1, Gdx.graphics.getHeight(), Pixmap.Format.RGBA8888);
         linePixmap.setColor(Color.BLUE);
@@ -98,10 +97,10 @@ public class PID_Practice extends ApplicationAdapter {
         errorIntegral += error * Gdx.graphics.getDeltaTime();
         errorDerivative = (error - lastError) / Gdx.graphics.getDeltaTime();
         float force = 0;
-        force += error * gain;
-        force += errorIntegral * gainIntegral;
-        force += errorDerivative * gainDerivative;
-        pointAcc += MathUtils.clamp(force, -1000f, 1000f);
+        force += error * kP;
+        force += errorIntegral * kI;
+        force += errorDerivative * kD;
+        pointAcc += force;
     }
 
     public void integrate() {
