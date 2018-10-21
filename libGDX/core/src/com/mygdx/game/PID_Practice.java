@@ -6,7 +6,9 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
+import org.graalvm.compiler.loop.MathUtil;
 
 public class PID_Practice extends ApplicationAdapter {
     SpriteBatch batch;
@@ -24,6 +26,10 @@ public class PID_Practice extends ApplicationAdapter {
     float errorIntegral;
     float errorDerivative;
 
+    float gain;
+    float gainIntegral;
+    float gainDerivative;
+
     @Override
     public void create() {
         batch = new SpriteBatch();
@@ -33,6 +39,15 @@ public class PID_Practice extends ApplicationAdapter {
         pointPos = setPoint;
         pointVel = 0;
         pointAcc = 0;
+
+        error = 0;
+        lastError = 0;
+        errorIntegral = 0;
+        errorDerivative = 0;
+
+        gain = 25f;
+        gainIntegral = 10f;
+        gainDerivative = 10f;
 
         Pixmap linePixmap = new Pixmap(1, Gdx.graphics.getHeight(), Pixmap.Format.RGBA8888);
         linePixmap.setColor(Color.BLUE);
@@ -70,7 +85,7 @@ public class PID_Practice extends ApplicationAdapter {
             pointVel = 0;
             pointAcc = 0;
         }
-        else if (Gdx.input.isButtonPressed(Input.Buttons.RIGHT)) {
+        if (Gdx.input.isButtonPressed(Input.Buttons.RIGHT)) {
             Vector3 mousePos = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
             camera.unproject(mousePos);
             setPoint = mousePos.x;
@@ -83,10 +98,10 @@ public class PID_Practice extends ApplicationAdapter {
         errorIntegral += error * Gdx.graphics.getDeltaTime();
         errorDerivative = (error - lastError) / Gdx.graphics.getDeltaTime();
         float force = 0;
-        force += error * 1f;
-        force += errorIntegral * 0.01f;
-        force += errorDerivative * 10f;
-        pointAcc += force;
+        force += error * gain;
+        force += errorIntegral * gainIntegral;
+        force += errorDerivative * gainDerivative;
+        pointAcc += MathUtils.clamp(force, -1000f, 1000f);
     }
 
     public void integrate() {
